@@ -1,6 +1,8 @@
 import sys
+import psycopg2
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
+from database import Connection
 
 class Login(QDialog):
     def __init__(self, parent = None):
@@ -52,12 +54,19 @@ class Login(QDialog):
         self.sign_up_tab.setLayout(layout)
 
     def login(self):
-        if(self.username.text() == 'foo' and
-            self.password.text() == 'bar'):
-            self.accept()
-        else:
-            QMessageBox.warning(
-                self, 'Error', 'Bad user or password')
+        self.connection = None
+        try:
+            conn = Connection(self.username.text(), self.password.text())
+        except psycopg2.OperationalError:
+            QMessageBox.warning(self, 'Error', 'Failed password authentication')
+            return
+        except Exception as e:
+            print(e)
+            QMessageBox.warning(self, 'Error', str(e))
+            return
+
+        self.accept()
+        self.connection = conn
 
     def sign_up(self):
         account = self.account_drop.currentText()
@@ -177,11 +186,12 @@ class UI(QMainWindow):
 
         print(self.report_list[i])
 
-app = QApplication(sys.argv)
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
 
-login = Login()
+    login = Login()
 
-if(login.exec_() == QDialog.Accepted):
-    ui = UI()
-    ui.show()
-    sys.exit(app.exec_())
+    if(login.exec_() == QDialog.Accepted):
+        ui = UI()
+        ui.show()
+        sys.exit(app.exec_())
