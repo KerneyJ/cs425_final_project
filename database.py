@@ -13,15 +13,15 @@ class Connection(object):
 
     def add_hospital(self, name, city, state, hcost):
         cur = self.__cur
-        query = "INSERT INTO public.\"Hospital\"(id, name, city, state, hcost) VALUES (%s, %s, %s, %s, %s)"
+        query = "INSERT INTO public.\"Hospital\"(id, \"name\", city, state, hcost) VALUES (%s, %s, %s, %s, %s)"
         cur.execute("SELECT id FROM public.\"Hospital\"")
         ids = cur.fetchall()
-        curr_id = random.randint(0, 2 ** 32 - 1)
+        curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
-            curr_id = random.randint(0, 2 ** 32 - 1)
+            curr_id = random.randint(0, 2 ** 16 - 1)
 
         try:
-            cur.execute(query=query, vars=(name, city, state, hcost))
+            cur.execute(query=query, vars=(curr_id, name, city, state, hcost))
         except Exception as e: # TODO go through and add more exceptions
             print(e)
             return
@@ -33,9 +33,9 @@ class Connection(object):
         query = "INSERT INTO public.\"Doctor\"(id, \"name\", organspec, dob, fee, email, phone, h_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
         cur.execute("SELECT id FROM public.\"Doctor\"")
         ids = cur.fetchall()
-        curr_id = random.randint(0, 2 ** 32 - 1)
+        curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
-            curr_id = random.randint(0, 2 ** 32 - 1)
+            curr_id = random.randint(0, 2 ** 16 - 1)
 
         try:
             cur.execute(query=query, vars=(curr_id, name, organspec, dob, fee, email, phone, h_id))
@@ -50,9 +50,9 @@ class Connection(object):
         query = "INSERT INTO public.\"Patient\"(\"name\", bloodtype, dob, requestedorgan, email, phone, id, dr_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
         cur.execute("SELECT id FROM public.\"Patient\"")
         ids = cur.fetchall()
-        curr_id = random.randint(0, 2 ** 32 - 1)
+        curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
-            curr_id = random.randint(0, 2 ** 32 - 1)
+            curr_id = random.randint(0, 2 ** 16 - 1)
 
         try:
             cur.execute(query=query, vars=(name, bloodtype, dob, requestedorgan, email, phone, curr_id, dr_id))
@@ -69,9 +69,9 @@ class Connection(object):
         # generate a unique id
         cur.execute("SELECT id FROM public.\"BloodDonor\"")
         ids = cur.fetchall()
-        curr_id = random.randint(0, 2 ** 32 - 1)
+        curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
-            curr_id = random.randint(0, 2 ** 32 - 1)
+            curr_id = random.randint(0, 2 ** 16 - 1)
 
         try:
             cur.execute(query=query, vars=(name, bloodtype, dob, chronicilness, drugusage, medicalhistory, lastdonation, city, state, email, phone, curr_id))
@@ -87,9 +87,9 @@ class Connection(object):
         # generate a unique id
         cur.execute("SELECT id FROM public.\"BloodDonor\"")
         ids = cur.fetchall()
-        curr_id = random.randint(0, 2 ** 32 - 1)
+        curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
-            curr_id = random.randint(0, 2 ** 32 - 1)
+            curr_id = random.randint(0, 2 ** 16 - 1)
 
         try:
             cur.execute(query=query, vars=(name, bloodtype, dob, chronicilness, drugusage, medicalhistory, lastdonation, city, state, email, phone, curr_id))
@@ -152,7 +152,8 @@ class Connection(object):
         self.__conn.close()
 
 if __name__ == "__main__":
-    cnn = Connection(user="", password="password")
-    print(cnn.get_patient_info())
+    cnn = Connection(user="dbadmin", password="password")
+    # cnn.add_hospital('mercy', 'Chicago', 'IL', 100)
+    # print(cnn.get_patient_info())
 
     cnn.on_exit()
