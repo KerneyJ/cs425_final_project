@@ -56,17 +56,51 @@ class Connection(object):
         except Exception as e: # TODO go through and add more exceptions
             print(e)
 
-    def add_organ(self):
-        pass
+    def add_organ(self, organname, availabledate, donateiondate, life, p_id, dn_id, dr_id):
+        cur = self.__cur
+        query = "INSERT INTO public.\"Organ\"(organname, availabledate, donateiondate, life, p_id, dn_id, dr_id) VALUES (%s, %s, %s, %s, %s, %s, %s);"
+        try:
+            cur.execute(query=query, vars=(organname, availabledate, donateiondate, life, p_id, dn_id, dr_id))
+        except Exception as e: # TODO go through and add more exceptions
+            print(e)
+
+    def add_blood(self, bloodtype, availabledate, donateiondate, life, p_id, dn_id, dr_id):
+        cur = self.__cur
+        query = "INSERT INTO public.\"Blood\"(bloodtype, availabledate, donateiondate, life, p_id, dn_id, dr_id) VALUES (%s, %s, %s, %s, %s, %s, %s);"
+        try:
+            cur.execute(query=query, vars=(bloodtype, availabledate, donateiondate, life, p_id, dn_id, dr_id))
+        except Exception as e: # TODO go through and add more exceptions
+            print(e)
 
     def get_patient_info(self):
-        pass
+        cur = self.__cur
+        query = "SELECT * FROM public.\"Patient\""
+        try:
+            cur.execute(query)
+            return cur.fetchall()
+        except Exception as e:
+            print(e)
+            return None
 
     def get_blood_list(self):
-        pass
+        cur = self.__cur
+        query = "SELECT * FROM public.\"Blood\""
+        try:
+            cur.execute(query)
+            return cur.fetchall()
+        except Exception as e:
+            print(e)
+            return None
 
     def get_organ_list(self):
-        pass
+        cur = self.__cur
+        query = "SELECT * FROM public.\"Organ\""
+        try:
+            cur.execute(query)
+            return cur.fetchall()
+        except Exception as e:
+            print(e)
+            return None
 
     def on_exit(self):
         self.__cur.close()
