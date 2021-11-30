@@ -14,7 +14,7 @@ print(cur.fetchone())
 conn.close()
 cur.close()
 
-class Database(object):
+class Connection(object):
 
     def __init__(self, user, password) -> None:
         super().__init__()
@@ -37,5 +37,5 @@ class Database(object):
         pass
 
 
-def organ_report(db: Database):
+def organ_report(cnn: Connection):
     pass
