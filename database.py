@@ -24,6 +24,41 @@ class Connection(object):
             cur.execute(query=query, vars=(name, city, state, hcost))
         except Exception as e: # TODO go through and add more exceptions
             print(e)
+            return
+
+        self.__conn.commit()
+
+    def add_doctor(self, name, organspec, dob, fee, email, phone, h_id):
+        cur = self.__cur
+        query = "INSERT INTO public.\"Doctor\"(id, \"name\", organspec, dob, fee, email, phone, h_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        cur.execute("SELECT id FROM public.\"Doctor\"")
+        ids = cur.fetchall()
+        curr_id = random.randint(0, 2 ** 32 - 1)
+        while curr_id in ids:
+            curr_id = random.randint(0, 2 ** 32 - 1)
+
+        try:
+            cur.execute(query=query, vars=(curr_id, name, organspec, dob, fee, email, phone, h_id))
+        except Exception as e: # TODO go through and add more exceptions
+            print(e)
+            return
+
+        self.__conn.commit()
+
+    def add_patient(self, name, bloodtype, dob, requestedorgan, email, phone, dr_id):
+        cur = self.__cur
+        query = "INSERT INTO public.\"Patient\"(\"name\", bloodtype, dob, requestedorgan, email, phone, id, dr_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        cur.execute("SELECT id FROM public.\"Patient\"")
+        ids = cur.fetchall()
+        curr_id = random.randint(0, 2 ** 32 - 1)
+        while curr_id in ids:
+            curr_id = random.randint(0, 2 ** 32 - 1)
+
+        try:
+            cur.execute(query=query, vars=(name, bloodtype, dob, requestedorgan, email, phone, curr_id, dr_id))
+        except Exception as e: # TODO go through and add more exceptions
+            print(e)
+            return
 
         self.__conn.commit()
 
