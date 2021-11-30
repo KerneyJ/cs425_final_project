@@ -1,26 +1,28 @@
 import psycopg2
 import random
 
-# conn = psycopg2.connect(database="project425", user = "jamie", password = "password", host = "127.0.0.1", port = "5432")
-# cur = conn.cursor()
-# 
-# cur.execute("INSERT INTO public.\"Patient\"(\"name\", bloodtype, dob, requestedorgan, email, phone, id) VALUES (%s, %s, %s, %s, %s, %s, %s);", ('jamie', 'O+', '2001-10-06', 'Kidney', 'jamisonkerney@gmail.com', '3127312822', 1))
-# 
-# query = f"""SELECT * FROM public.\"Patient\""""
-# cur.execute(query=query)
-# print(cur.fetchone())
-# print(cur.fetchone())
-# 
-# conn.commit()
-# conn.close()
-# cur.close()
-
 class Connection(object):
 
     def __init__(self, user, password) -> None:
         super().__init__()
         self.__conn = psycopg2.connect(database="project425", user=user, password=password, host = "127.0.0.1", port = "5432")
         self.__cur = self.__conn.cursor()
+
+    def add_hospital(self, name, city, state, hcost):
+        cur = self.__cur
+        query = "INSERT INTO public.\"Hospital\"(id, name, city, state, hcost) VALUES (%s, %s, %s, %s, %s)"
+        cur.execute("SELECT id FROM public.\"Hospital\"")
+        ids = cur.fetchall()
+        curr_id = random.randint(0, 2 ** 32 - 1)
+        while curr_id in ids:
+            curr_id = random.randint(0, 2 ** 32 - 1)
+
+        try:
+            cur.execute(query=query, vars=(name, city, state, hcost))
+        except Exception as e: # TODO go through and add more exceptions
+            print(e)
+
+        self.__conn.commit()
 
     def add_Bdonor(self, name, bloodtype, dob, chronicilness, drugusage, medicalhistory, lastdonation, city, state, email, phone):
         cur = self.__cur
@@ -56,6 +58,8 @@ class Connection(object):
         except Exception as e: # TODO go through and add more exceptions
             print(e)
 
+        self.__conn.commit()
+
     def add_organ(self, organname, availabledate, donateiondate, life, p_id, dn_id, dr_id):
         cur = self.__cur
         query = "INSERT INTO public.\"Organ\"(organname, availabledate, donateiondate, life, p_id, dn_id, dr_id) VALUES (%s, %s, %s, %s, %s, %s, %s);"
@@ -64,6 +68,8 @@ class Connection(object):
         except Exception as e: # TODO go through and add more exceptions
             print(e)
 
+        self.__conn.commit()
+
     def add_blood(self, bloodtype, availabledate, donateiondate, life, p_id, dn_id, dr_id):
         cur = self.__cur
         query = "INSERT INTO public.\"Blood\"(bloodtype, availabledate, donateiondate, life, p_id, dn_id, dr_id) VALUES (%s, %s, %s, %s, %s, %s, %s);"
@@ -71,6 +77,8 @@ class Connection(object):
             cur.execute(query=query, vars=(bloodtype, availabledate, donateiondate, life, p_id, dn_id, dr_id))
         except Exception as e: # TODO go through and add more exceptions
             print(e)
+
+        self.__conn.commit()
 
     def get_patient_info(self):
         cur = self.__cur
@@ -109,3 +117,9 @@ class Connection(object):
 
 def organ_report(cnn: Connection):
     pass
+
+if __name__ == "__main__":
+    cnn = Connection(user="jamie", password="password")
+    print(cnn.get_patient_info())
+
+    cnn.on_exit()
