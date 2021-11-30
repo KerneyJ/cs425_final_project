@@ -1,6 +1,9 @@
 import psycopg2
 import random
 
+# Notes: need to add hospital if there is none; make patients and doctors select hosptial on login in
+# possibly make admin role that can create hospitals
+
 class Connection(object):
 
     def __init__(self, user, password) -> None:
