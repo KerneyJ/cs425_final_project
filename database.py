@@ -89,9 +89,8 @@ class Connection(object):
         try:
             cur.execute(query)
             return cur.fetchall()
-        except Exception as e:
-            print(e)
-            return None
+        except psycopg2.errors.InsufficientPrivilege as insfpr:
+            return insfpr
 
     def get_blood_list(self):
         cur = self.__cur
@@ -117,12 +116,8 @@ class Connection(object):
         self.__cur.close()
         self.__conn.close()
 
-
-def organ_report(cnn: Connection):
-    pass
-
 if __name__ == "__main__":
-    cnn = Connection(user="jamie", password="password")
+    cnn = Connection(user="", password="password")
     print(cnn.get_patient_info())
 
     cnn.on_exit()
