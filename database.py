@@ -178,11 +178,11 @@ class Connection(object):
         self.__conn.close()
 
 if __name__ == "__main__":
-    cnn = Connection(user="hspadmin", password="password")
+    # cnn = Connection(user="hspadmin", password="password")
     # cnn.add_hospital('mercy', 'Chicago', 'IL', 100)
-    cnn.add_doctor(username='dsmith', password='password', name='Dr_Smith', organspec='Kidney', dob='2002-01-30', email='smith@mercy.org', phone='1098765432', h_id=1639736916)
+    # cnn.add_doctor(username='dsmith', password='password', name='Dr_Smith', organspec='Kidney', dob='2002-01-30', email='smith@mercy.org', phone='1098765432', h_id=1639736916)
     # cnn.add_patient(name='name', bloodtype='AB+', dob='2000-01-01', requestedorgan='kidney', email='something@test.com', phone='1234567890', dr_id='50413')
     
-    # cnn = Connection(user="dsmith", password="password")
-    # cnn.add_patient(name='name', bloodtype='O-', dob='2000-01-01', requestedorgan='kidney', email='name@test.com', phone='12344567890', dr_id=)
+    cnn = Connection(user="dsmith", password="password")
+    cnn.add_patient(name='name', bloodtype='O-', dob='2000-01-01', requestedorgan='kidney', email='name@test.com', phone='1234567890', dr_id='45463')
     cnn.on_exit()
