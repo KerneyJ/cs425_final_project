@@ -4,6 +4,10 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from database import Connection
 
+# Note for Ian
+# instead of making people sign up and make new accounts(its more complicated than you think it would be)
+# we will just have an admin account that makes accounts for people and they will just login that way
+# so I will need a special tab for the admin account that allows him to make accounts when people need it
 class Login(QDialog):
     def __init__(self, parent = None):
         super(Login, self).__init__(parent)
@@ -13,12 +17,12 @@ class Login(QDialog):
         layout = QHBoxLayout(self)
 
         self.create_login_tab()
-        self.create_sign_up_tab()
+        # self.create_sign_up_tab()
 
         tab_widget = QTabWidget()
 
         tab_widget.addTab(self.login_tab, "Log in")
-        tab_widget.addTab(self.sign_up_tab, "Sign up")
+        # tab_widget.addTab(self.sign_up_tab, "Sign up")
 
         layout.addWidget(tab_widget)
 
@@ -36,22 +40,22 @@ class Login(QDialog):
         self.login_tab = QGroupBox()
         self.login_tab.setLayout(layout)
     
-    def create_sign_up_tab(self):
-        self.account_drop = QComboBox()
-        self.account_drop.addItems(["Patient", "Doctor"])
-        self.n_username = QLineEdit(self)
-        self.n_password = QLineEdit(self)
-        self.sign_up_button = QPushButton('Login', self)
-        self.sign_up_button.clicked.connect(self.sign_up)
+    # def create_sign_up_tab(self):
+    #     self.account_drop = QComboBox()
+    #     self.account_drop.addItems(["Patient", "Doctor"])
+    #     self.n_username = QLineEdit(self)
+    #     self.n_password = QLineEdit(self)
+    #     self.sign_up_button = QPushButton('Login', self)
+    #     self.sign_up_button.clicked.connect(self.sign_up)
 
-        layout = QFormLayout()
-        layout.addRow("Account:", self.account_drop)
-        layout.addRow("Username:", self.n_username)
-        layout.addRow("Password:", self.n_password)
-        layout.addRow(self.sign_up_button)
+    #     layout = QFormLayout()
+    #     layout.addRow("Account:", self.account_drop)
+    #     layout.addRow("Username:", self.n_username)
+    #     layout.addRow("Password:", self.n_password)
+    #     layout.addRow(self.sign_up_button)
 
-        self.sign_up_tab = QGroupBox()
-        self.sign_up_tab.setLayout(layout)
+    #     self.sign_up_tab = QGroupBox()
+    #     self.sign_up_tab.setLayout(layout)
 
     def login(self):
         self.connection = None
@@ -68,11 +72,11 @@ class Login(QDialog):
         self.accept()
         self.connection = conn
 
-    def sign_up(self):
-        account = self.account_drop.currentText()
-        user = self.n_username.text()
-        password = self.n_password.text()
-        print(f"Create new user: {account} / {user} / {password}")
+    # def sign_up(self):
+    #     account = self.account_drop.currentText()
+    #     user = self.n_username.text()
+    #     password = self.n_password.text()
+    #     print(f"Create new user: {account} / {user} / {password}")
 
 class UI(QMainWindow):
     def __init__(self, parent = None):
