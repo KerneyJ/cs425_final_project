@@ -31,7 +31,6 @@ class Connection(object):
     def add_doctor(self, username, password, name, organspec, dob, email, phone, h_id):
         """Add doctor is intended to be called when the user is dbadmin, it will both add a doctor to the database and create a new role"""
         cur = self.__cur
-        query = "INSERT INTO public.\"Doctor\"(id, \"name\", organspec, dob, email, phone, h_id) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         cur.execute("SELECT id FROM public.\"Doctor\"")
         ids = cur.fetchall()
         curr_id = random.randint(0, 2 ** 16 - 1)
@@ -39,8 +38,9 @@ class Connection(object):
             curr_id = random.randint(0, 2 ** 16 - 1)
 
         # Add doctor to database
+        query = f"INSERT INTO public.\"Doctor\"(id, \"name\", organspec, dob, email, phone, h_id, username) VALUES ({curr_id}, \'{name}\', \'{organspec}\', \'{dob}\', \'{email}\', \'{phone}\', {h_id}, \'{username}\')"
         try:
-            cur.execute(query=query, vars=(curr_id, name, organspec, dob, email, phone, h_id))
+            cur.execute(query=query)
         except Exception as e: # TODO go through and add more exceptions
             print(e)
             return
@@ -180,7 +180,9 @@ class Connection(object):
 if __name__ == "__main__":
     cnn = Connection(user="hspadmin", password="password")
     # cnn.add_hospital('mercy', 'Chicago', 'IL', 100)
-    # print(cnn.get_patient_info())
-    # cnn.add_doctor(username='dsmith', password='password', name='Dr_Smith', organspec='Kidney', dob='2002-01-30', email='smith@mercy.org', phone='1098765432', h_id=1639736916)
+    cnn.add_doctor(username='dsmith', password='password', name='Dr_Smith', organspec='Kidney', dob='2002-01-30', email='smith@mercy.org', phone='1098765432', h_id=1639736916)
     # cnn.add_patient(name='name', bloodtype='AB+', dob='2000-01-01', requestedorgan='kidney', email='something@test.com', phone='1234567890', dr_id='50413')
+    
+    # cnn = Connection(user="dsmith", password="password")
+    # cnn.add_patient(name='name', bloodtype='O-', dob='2000-01-01', requestedorgan='kidney', email='name@test.com', phone='12344567890', dr_id=)
     cnn.on_exit()
