@@ -153,25 +153,33 @@ class Connection(object):
         except psycopg2.errors.InsufficientPrivilege as insfpr:
             return insfpr
 
-    def get_blood_list(self):
+    def organ_donor_list(self, state, organ, doctor):
         cur = self.__cur
-        query = "SELECT * FROM public.\"Blood\""
+        # get doctor id from doctor name
+        query = f"SELECT id FROM public.\"Doctor\" WHERE name = \'{doctor}\'"
         try:
             cur.execute(query)
-            return cur.fetchall()
         except Exception as e:
             print(e)
-            return None
 
-    def get_organ_list(self):
-        cur = self.__cur
-        query = "SELECT * FROM public.\"Organ\""
+        d_ids = cur.fetchall() # TODO might have to do some string formating
+
+        # pull donor id from organ relation that match state, organ, and doctor
+        query = f"SELECT dn_id FROM public.\"Organ\" WHERE dr_id IN {d_ids}"
         try:
             cur.execute(query)
-            return cur.fetchall()
         except Exception as e:
             print(e)
-            return None
+
+        dn_ids = cur.fetchall()
+        # pull donors with donor id from above
+        query = f"SELECT * FROM public.\"OrganDonor\" WHERE id IN {dn_ids}"
+        try:
+            cur.execute(query)
+        except Exception as e:
+            print(e)
+
+        return cur.fetchall()
 
     def on_exit(self):
         self.__cur.close()
