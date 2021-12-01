@@ -28,19 +28,45 @@ class Connection(object):
 
         self.__conn.commit()
 
-    def add_doctor(self, name, organspec, dob, fee, email, phone, h_id):
+    def add_doctor(self, username, password, name, organspec, dob, email, phone, h_id):
+        """Add doctor is intended to be called when the user is dbadmin, it will both add a doctor to the database and create a new role"""
         cur = self.__cur
-        query = "INSERT INTO public.\"Doctor\"(id, \"name\", organspec, dob, fee, email, phone, h_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        query = "INSERT INTO public.\"Doctor\"(id, \"name\", organspec, dob, email, phone, h_id) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         cur.execute("SELECT id FROM public.\"Doctor\"")
         ids = cur.fetchall()
         curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
             curr_id = random.randint(0, 2 ** 16 - 1)
 
+        # Add doctor to database
         try:
-            cur.execute(query=query, vars=(curr_id, name, organspec, dob, fee, email, phone, h_id))
+            cur.execute(query=query, vars=(curr_id, name, organspec, dob, email, phone, h_id))
         except Exception as e: # TODO go through and add more exceptions
             print(e)
+            return
+
+        # create doctor role
+        query = f"CREATE ROLE {username} WITH login"
+        try:
+            cur.execute(query=query)
+        except Exception as e: # TODO go through and add more exceptions
+            print('create role', e)
+            return
+
+        # change password
+        query = f"ALTER ROLE {username} WITH PASSWORD \'{password}\'"
+        try:
+            cur.execute(query=query)
+        except Exception as e: # TODO go through and add more exceptions
+            print('createpassword', e)
+            return
+        
+        # grant doctor privileges
+        query = f"GRANT doctor to {username}"
+        try:
+            cur.execute(query=query, vars=(username))
+        except Exception as e: # TODO go through and add more exceptions
+            print('grant privileges', e)
             return
 
         self.__conn.commit()
@@ -152,8 +178,9 @@ class Connection(object):
         self.__conn.close()
 
 if __name__ == "__main__":
-    cnn = Connection(user="dbadmin", password="password")
+    cnn = Connection(user="hspadmin", password="password")
     # cnn.add_hospital('mercy', 'Chicago', 'IL', 100)
     # print(cnn.get_patient_info())
-
+    # cnn.add_doctor(username='dsmith', password='password', name='Dr_Smith', organspec='Kidney', dob='2002-01-30', email='smith@mercy.org', phone='1098765432', h_id=1639736916)
+    # cnn.add_patient(name='name', bloodtype='AB+', dob='2000-01-01', requestedorgan='kidney', email='something@test.com', phone='1234567890', dr_id='50413')
     cnn.on_exit()
