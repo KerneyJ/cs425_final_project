@@ -71,18 +71,18 @@ class Login(QDialog):
 
     def login(self):
         self.connection = None
-        # try:
-        #     conn = Connection(self.username.text(), self.password.text())
-        # except psycopg2.OperationalError:
-        #     QMessageBox.warning(self, 'Error', 'Failed password authentication')
-        #     return
-        # except Exception as e:
-        #     print(e)
-        #     QMessageBox.warning(self, 'Error', str(e))
-        #     return
+        try:
+            conn = Connection(self.username.text(), self.password.text())
+        except psycopg2.OperationalError:
+            QMessageBox.warning(self, 'Error', 'Failed password authentication')
+            return
+        except Exception as e:
+            print(e)
+            QMessageBox.warning(self, 'Error', str(e))
+            return
 
         self.accept()
-        # self.connection = conn
+        self.connection = conn
         self.view = self.account_type.currentText()
 
     def sign_up(self):
@@ -92,10 +92,11 @@ class Login(QDialog):
         print(f"Create new user: {account} / {user} / {password}")
 
 class UI(QMainWindow):
-    def __init__(self, view):
+    def __init__(self, view, connection):
         super(UI, self).__init__(None)
 
         self.blood_types = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+        self.connection = connection
 
         self.tabs = [(self.create_query_tab, 'ADP'),
                      (self.create_report_tab, 'AD'),
