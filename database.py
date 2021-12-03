@@ -16,17 +16,6 @@ class Connection(object):
         self.__conn = psycopg2.connect(database="project425", user=user, password=password, host = "127.0.0.1", port = "5432")
         self.__cur = self.__conn.cursor()
 
-
-    def get_dr_id(self):
-        cur = self.__cur
-        query = f"SELECT id FROM public.\"Doctor\" WHERE username = \'{self.user}\'"
-        try:
-            cur.execute(query)
-            return cur.fetchall()[0][0]
-        except Exception as e:
-            print(type(e), e)
-            return None
-
     def add_hospital(self, name, city, state, hcost):
         cur = self.__cur
         query = "INSERT INTO public.\"Hospital\"(id, \"name\", city, state, hcost) VALUES (%s, %s, %s, %s, %s)"
@@ -265,7 +254,6 @@ class Connection(object):
 
     def create_donation(self, name, dob, bloodtype, city, state, date, organ=None):
         cur = self.__cur
-        dr_id = self.get_dr_id()
         if organ:
             # get patient who will receive
             query = f"SELECT id FROM public.\"Patient\" WHERE requestedorgan = \'{organ}\'"
@@ -279,6 +267,18 @@ class Connection(object):
                 # TODO patient not found
                 return
             p_id = p_id[0]
+
+            query = f"SELECT dr_id FROM public.\"Patient\" WHERE id = {p_id}"
+            try:
+                cur.execute(query)
+            except Exception as e:
+                print('finding doctor', type(e), e)
+                return
+            dr_id = cur.fetchone()
+            if dr_id == None:
+                # TODO donor not found
+                return
+            dr_id = dr_id[0]
 
             query = f"SELECT id FROM public.\"OrganDonor\" \
                 WHERE \"name\" = \'{name}\' AND bloodtype = \'{bloodtype}\' AND dob = \'{dob}\' AND city = \'{city}\' and state = \'{state}\'"
@@ -317,6 +317,18 @@ class Connection(object):
                 # TODO patient not found
                 return
             p_id = p_id[0]
+
+            query = f"SELECT dr_id FROM public.\"Patient\" WHERE id = {p_id}"
+            try:
+                cur.execute(query)
+            except Exception as e:
+                print('finding doctor', type(e), e)
+                return
+            dr_id = cur.fetchone()
+            if dr_id == None:
+                # TODO donor not found
+                return
+            dr_id = dr_id[0]
             
             query = f"SELECT id FROM public.\"BloodDonor\" \
                 WHERE \"name\" = \'{name}\' AND bloodtype = \'{bloodtype}\' AND dob = \'{dob}\' AND city = \'{city}\' and state = \'{state}\'"
