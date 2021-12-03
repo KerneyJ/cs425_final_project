@@ -92,7 +92,7 @@ class Login(QDialog):
         print(f"Create new user: {account} / {user} / {password}")
 
 class UI(QMainWindow):
-    def __init__(self, view, connection):
+    def __init__(self, view, connection: Connection):
         super(UI, self).__init__(None)
 
         self.blood_types = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
@@ -207,6 +207,8 @@ class UI(QMainWindow):
         self.n_donor_drug_usage = QLineEdit()
         self.n_donor_email = QLineEdit()
         self.n_donor_phone = QLineEdit()
+        self.n_donor_organ = QLineEdit()
+        self.n_donor_medhist = QLineEdit()
         self.sign_up_button = QPushButton('Create Donor', self)
         self.sign_up_button.clicked.connect(self.create_donor)
 
@@ -218,9 +220,11 @@ class UI(QMainWindow):
         t_layout.addRow("City:", self.n_donor_city)
         t_layout.addRow("State:", self.n_donor_state)
         t_layout.addRow("Chronic Ilnesses:", self.n_donor_illness)
+        t_layout.addRow("Medical History: ", self.n_donor_medhist)
         t_layout.addRow("Drug usage:", self.n_donor_drug_usage)
         t_layout.addRow("Email:", self.n_donor_email)
         t_layout.addRow("Phone:", self.n_donor_phone)
+        t_layout.addRow("Organ (leave empty for blood donors):", self.n_donor_organ)
         t_layout.addRow(self.sign_up_button)
 
         donation_options = QGroupBox("Options")
@@ -257,7 +261,11 @@ class UI(QMainWindow):
         user = self.n_username.text()
         password = self.n_password.text()
         
-        print(f"Create new user: {account} / {user} / {password}")
+        if account == 'Doctor':
+            self.connection.create_doc_acc(self.n_username.text(), self.n_password.text())
+        else:
+            self.connection.create_pat_acc(self.n_username.text(), self.n_password.text())
+        # print(f"Create new user: {account} / {user} / {password}")
 
     def create_query_options(self, idx):
         options_list = [[], 
@@ -265,12 +273,13 @@ class UI(QMainWindow):
                         [('State', 'text', 'IL'), ('Blood type', 'drop-down', self.blood_types), ('Availability', 'text', ''), ('Age Group', 'drop-down', ['0-15','16-64','65+'])],
                         [('State', 'text', 'IL'), ('Blood type', 'drop-down', self.blood_types), ('Organ', 'text', '')]]
         
+        self.query_idx = idx
         self.add_options(self.query_layout, options_list[idx], self.run_query)
         
     def create_donation_options(self, idx):
         options_list = [[], 
-                        [('Donor name', 'text'), ('Donor DOB', 'date'), ('Blood type', 'drop-down', self.blood_types), ('City', 'text'), ('State', 'text')],
-                        [('Organ name', 'text'), ('Donor name', 'text'), ('DOB', 'date'), ('Blood type', 'drop-down', self.blood_types), ('City', 'text'), ('State', 'text')]]
+                        [('Donor name', 'text'), ('Donor DOB', 'text'), ('Blood type', 'drop-down', self.blood_types), ('City', 'text'), ('State', 'text')],
+                        [('Organ name', 'text'), ('Donor name', 'text'), ('DOB', 'text'), ('Blood type', 'drop-down', self.blood_types), ('City', 'text'), ('State', 'text')]]
         
         self.add_options(self.donation_layout, options_list[idx], self.create_donation)
 
@@ -313,7 +322,10 @@ class UI(QMainWindow):
 
             parameters.append(text)
         
-        results = test_results
+        if(self.query_idx == 1):
+            results = self.connection.organ_donor_list(parameters[0], parameters[1], parameters[2])
+
+        # results = test_results
 
         self.display_list(self.query_results_layout, results)
 
@@ -325,6 +337,30 @@ class UI(QMainWindow):
         state = self.n_donor_state.text()
 
         print(f"{name} / {DOB.month()}-{DOB.day()}-{DOB.year()} / {blood_type} / {city} / {state}")
+        if self.n_donor_organ.text() == '':
+            self.connection.add_Bdonor( self.n_donor_name.text(),
+                                        self.n_donor_blood.currentText(),
+                                        self.n_donor_DOB.text(),
+                                        self.n_donor_illness.text(),
+                                        self.n_donor_drug_usage.text(),
+                                        self.n_donor_medhist.text(),
+                                        QDate.currentDate().toString(),
+                                        self.n_donor_city.text(),
+                                        self.n_donor_state.text(),
+                                        self.n_donor_email.text(),
+                                        self.n_donor_phone.text())
+        else:
+            self.connection.add_Odonor( self.n_donor_name.text(),
+                                        self.n_donor_blood.currentText(),
+                                        self.n_donor_DOB.text(),
+                                        self.n_donor_illness.text(),
+                                        self.n_donor_drug_usage.text(),
+                                        self.n_donor_medhist.text(),
+                                        self.n_donor_city.text(),
+                                        self.n_donor_state.text(), 
+                                        self.n_donor_organ.text(),
+                                        self.n_donor_email.text(),
+                                        self.n_donor_phone.text())
 
     def create_donation(self):
         parameters = []
@@ -344,11 +380,34 @@ class UI(QMainWindow):
             parameters.append(text)
         
         print(parameters)
+        today = QDate.currentDate()
+        today_str = str(today.year()) + '-' + str(today.month()) + '-' + str(today.day())
+
+        if len(parameters) == 5:
+            print('adding blood')
+            self.connection.create_donation(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], today_str)
+            print('has added blood')
+            # dr_id = self.connection.get_dr_id()
+            # p_id = self.connection.get_patient_for_blood(parameters[0])
+            # dn_id = self.connection.get_odonor_for_patient(parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
+            # self.connection.add_blood(parameters[2], QDate.currentDate(), QDate.currentDate(), 7, p_id, dn_id, dr_id)
+        else:
+            print('adding organ')
+            self.connection.create_donation(parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], today_str, parameters[0])
+            print('has added organ')
+            # dr_id = self.connection.get_dr_id()
+            # p_id = self.connection.get_patient_for_organ(parameters[0])
+            # dn_id = self.connection.get_odonor_for_patient(parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
+            # self.connection.add_organ(parameters[0], QDate.currentDate(), QDate.currentDate(), 7, p_id, dn_id, dr_id)
 
     def create_report(self, i):
         if(i == 0):
             self.display_list(self.report_results_layout, [])
             return
+        elif(i==1): # income
+            pass
+        elif(i==2): # operations
+            pass
 
         results = test_results
 
