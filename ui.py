@@ -264,16 +264,16 @@ class UI(QMainWindow):
                         [('State', 'text', 'IL'), ('Blood type', 'drop-down', self.blood_types), ('Availability', 'text', ''), ('Age Group', 'drop-down', ['0-15','16-64','65+'])],
                         [('State', 'text', 'IL'), ('Blood type', 'drop-down', self.blood_types), ('Organ', 'text', '')]]
         
-        self.add_options(self.query_layout, options_list[idx])
+        self.add_options(self.query_layout, options_list[idx], self.run_query)
         
     def create_donation_options(self, idx):
         options_list = [[], 
                         [('Donor name', 'text'), ('Donor DOB', 'date'), ('Blood type', 'drop-down', self.blood_types), ('City', 'text'), ('State', 'text')],
                         [('Organ name', 'text'), ('Donor name', 'text'), ('DOB', 'date'), ('Blood type', 'drop-down', self.blood_types), ('City', 'text'), ('State', 'text')]]
         
-        self.add_options(self.donation_layout, options_list[idx])
+        self.add_options(self.donation_layout, options_list[idx], self.create_donation)
 
-    def add_options(self, layout, options):
+    def add_options(self, layout, options, func):
         for i in reversed(range(layout.count())): 
             layout.itemAt(i).widget().setParent(None)
 
@@ -294,7 +294,7 @@ class UI(QMainWindow):
 
         submit_button = QPushButton()
         submit_button.setText("Run Query")
-        submit_button.clicked.connect(self.run_query)
+        submit_button.clicked.connect(func)
 
         layout.addWidget(submit_button)
 
@@ -325,6 +325,25 @@ class UI(QMainWindow):
 
         print(f"{name} / {DOB.month()}-{DOB.day()}-{DOB.year()} / {blood_type} / {city} / {state}")
 
+    def create_donation(self):
+        parameters = []
+
+        for i in range(self.donation_layout.count()): 
+            if(i % 2 == 0):
+                continue
+
+            widget = self.donation_layout.itemAt(i).widget()
+            if(type(widget) is QLineEdit):            
+                text = widget.text()
+            elif(type(widget) is QComboBox):
+                text = widget.currentText()
+            elif(type(widget) is QDateEdit):
+                text = widget.date()
+
+            parameters.append(text)
+        
+        print(parameters)
+
     def create_report(self, i):
         if(i == 0):
             self.display_list(self.report_results_layout, [])
@@ -340,8 +359,6 @@ class UI(QMainWindow):
 
         max_width = int(100 / (len(list[0])))
 
-        print(max_width)
-        print(len(list[0]))
         for row in list:
             lay = QHBoxLayout()            
             for el in row:
