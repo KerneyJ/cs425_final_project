@@ -4,6 +4,39 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from database import Connection
 
+test_results = [ ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fishuyfhcgbhjajlsuydtcasyitdbh'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', 'askuydgavoskucbhaksb2', 'go', 'fish'),
+                    ('wow nice', 'oh my gof', '1', '2', 'go', 'fish'),]
+
 class Login(QDialog):
     def __init__(self, parent = None):
         super(Login, self).__init__(parent)
@@ -65,13 +98,13 @@ class UI(QMainWindow):
         self.blood_types = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 
         self.tabs = [(self.create_query_tab, 'ADP'),
-                    (self.create_report_tab, 'AD'),
-                    (self.create_donation_tab, 'AD'),
-                    (self.create_admin_tab, 'A'), ]
+                     (self.create_report_tab, 'AD'),
+                     (self.create_donation_tab, 'AD'),
+                     (self.create_admin_tab, 'A'),]
 
         self.view = view
         self.setWindowTitle("Hospital Database")
-        self.setGeometry(600, 100, 500, 800)
+        self.setGeometry(600, 100, 800, 800)
         self.setFixedSize(self.size())
 
         content = QWidget(self)
@@ -93,18 +126,26 @@ class UI(QMainWindow):
     def create_query_tab(self):
         query_list = ['None', 'Organ Donor List', 'Blood Donor List', 'Donor Match List']
         
-        combo_box = QComboBox()
-        combo_box.addItems(query_list)
-        combo_box.currentIndexChanged.connect(self.add_options)
+        self.query_type = QComboBox()
+        self.query_type.addItems(query_list)
+        self.query_type.currentIndexChanged.connect(self.create_query_options)
 
+        self.query_layout = QFormLayout()
         query_options = QGroupBox("Options")
-        self.form_layout = QFormLayout()
-        query_options.setLayout(self.form_layout)
+        query_options.setLayout(self.query_layout)
+
+        self.query_results_layout = QVBoxLayout()
+        query_display = QGroupBox("Results")
+        query_display.setLayout(self.query_results_layout)
+        scroll = QScrollArea()
+        scroll.setWidget(query_display)
+        scroll.setWidgetResizable(True)
 
         layout = QVBoxLayout()
-        layout.addWidget(combo_box)
+        layout.addWidget(self.query_type)
         layout.addWidget(query_options)
-        layout.addStretch()
+        layout.addWidget(scroll)
+        # layout.addStretch()
 
         self.query_tab = QGroupBox()
         self.query_tab.setLayout(layout)
@@ -113,13 +154,21 @@ class UI(QMainWindow):
     def create_report_tab(self):
         report_list = ['None', 'Income Report', 'Operations Report']
 
-        combo_box = QComboBox()
-        combo_box.addItems(report_list)
-        combo_box.currentIndexChanged.connect(self.create_report)
+        report_type = QComboBox()
+        report_type.addItems(report_list)
+        report_type.currentIndexChanged.connect(self.create_report)
+
+        self.report_results_layout = QVBoxLayout()
+        report_display = QGroupBox("Results")
+        report_display.setLayout(self.report_results_layout)
+        scroll = QScrollArea()
+        scroll.setWidget(report_display)
+        scroll.setWidgetResizable(True)
 
         layout = QVBoxLayout()
-        layout.addWidget(combo_box)
-        layout.addStretch()
+        layout.addWidget(report_type)
+        layout.addWidget(scroll)
+        # layout.addStretch()
 
         self.report_tab = QGroupBox()
         self.report_tab.setLayout(layout)
@@ -143,10 +192,9 @@ class UI(QMainWindow):
 
         self.admin_tab = QGroupBox()
         self.admin_tab.setLayout(layout)
-        self.tab_widget.addTab(self.admin_tab, "Admin")
+        self.tab_widget.addTab(self.admin_tab, "Add Users")
 
     def create_donation_tab(self):
-        # blood type, name, DOB, city, state
         label = QLabel("Create new donor:")
         self.n_donor_name = QLineEdit()
         self.n_donor_DOB = QDateEdit()
@@ -154,17 +202,50 @@ class UI(QMainWindow):
         self.n_donor_blood.addItems(self.blood_types)
         self.n_donor_city = QLineEdit()
         self.n_donor_state = QLineEdit()
+        self.n_donor_illness = QLineEdit()
+        self.n_donor_drug_usage = QLineEdit()
+        self.n_donor_email = QLineEdit()
+        self.n_donor_phone = QLineEdit()
         self.sign_up_button = QPushButton('Create Donor', self)
         self.sign_up_button.clicked.connect(self.create_donor)
 
-        layout = QFormLayout()
-        layout.addWidget(label)
-        layout.addRow("Name:", self.n_donor_name)
-        layout.addRow("DOB:", self.n_donor_DOB)
-        layout.addRow("Blood Type:", self.n_donor_blood)
-        layout.addRow("City:", self.n_donor_city)
-        layout.addRow("State:", self.n_donor_state)
-        layout.addRow(self.sign_up_button)
+        t_layout = QFormLayout()
+        t_layout.addWidget(label)
+        t_layout.addRow("Name:", self.n_donor_name)
+        t_layout.addRow("DOB:", self.n_donor_DOB)
+        t_layout.addRow("Blood type:", self.n_donor_blood)
+        t_layout.addRow("City:", self.n_donor_city)
+        t_layout.addRow("State:", self.n_donor_state)
+        t_layout.addRow("Chronic Ilnesses:", self.n_donor_illness)
+        t_layout.addRow("Drug usage:", self.n_donor_drug_usage)
+        t_layout.addRow("Email:", self.n_donor_email)
+        t_layout.addRow("Phone:", self.n_donor_phone)
+        t_layout.addRow(self.sign_up_button)
+
+        donation_options = QGroupBox("Options")
+        self.donation_layout = QFormLayout()
+        donation_options.setLayout(self.donation_layout)
+        
+        label = QLabel("Create new donation:")
+        self.donation_type = QComboBox()
+        self.donation_type.addItems(['None', 'Blood', 'Organ'])
+        self.donation_type.currentIndexChanged.connect(self.create_donation_options)
+
+        b_layout = QVBoxLayout()
+        b_layout.addWidget(label)
+        b_layout.addWidget(self.donation_type)
+        b_layout.addWidget(donation_options)
+
+        top = QGroupBox()
+        top.setLayout(t_layout)
+
+        bottom = QGroupBox()
+        bottom.setLayout(b_layout)
+
+        layout = QVBoxLayout()
+        layout.addWidget(top)
+        layout.addWidget(bottom)
+        layout.addStretch()
 
         self.admin_tab = QGroupBox()
         self.admin_tab.setLayout(layout)
@@ -174,50 +255,66 @@ class UI(QMainWindow):
         account = self.account_drop.currentText()
         user = self.n_username.text()
         password = self.n_password.text()
+        
         print(f"Create new user: {account} / {user} / {password}")
 
-    def add_options(self, idx):
+    def create_query_options(self, idx):
         options_list = [[], 
                         [('State', 'text', 'IL'), ('Organ', 'text', ''), ('Doctor', 'text', '')], 
-                        [('State', 'text', 'IL'), ('Blood Type', 'drop-down', self.blood_types), ('Availability', 'text', ''), ('Age Group', 'drop-down', ['0-15','16-64','65+'])],
-                        [('State', 'text', 'IL'), ('Blood Type', 'drop-down', self.blood_types), ('Organ', 'text', '')]]
+                        [('State', 'text', 'IL'), ('Blood type', 'drop-down', self.blood_types), ('Availability', 'text', ''), ('Age Group', 'drop-down', ['0-15','16-64','65+'])],
+                        [('State', 'text', 'IL'), ('Blood type', 'drop-down', self.blood_types), ('Organ', 'text', '')]]
+        
+        self.add_options(self.query_layout, options_list[idx])
+        
+    def create_donation_options(self, idx):
+        options_list = [[], 
+                        [('Donor name', 'text'), ('Donor DOB', 'date'), ('Blood type', 'drop-down', self.blood_types), ('City', 'text'), ('State', 'text')],
+                        [('Organ name', 'text'), ('Donor name', 'text'), ('DOB', 'date'), ('Blood type', 'drop-down', self.blood_types), ('City', 'text'), ('State', 'text')]]
+        
+        self.add_options(self.donation_layout, options_list[idx])
 
-        for i in reversed(range(self.form_layout.count())): 
-            self.form_layout.itemAt(i).widget().setParent(None)
+    def add_options(self, layout, options):
+        for i in reversed(range(layout.count())): 
+            layout.itemAt(i).widget().setParent(None)
 
-        self.query_option = idx
-        if(idx == 0):
+        if(options == []):
             return
         
-        for option in options_list[idx]:
+        for option in options:
             if(option[1] == 'text'):
                 widget = QLineEdit()
             elif(option[1] == 'drop-down'):
                 widget = QComboBox()
                 widget.addItems(option[2])
+            elif(option[1] == 'date'):
+                widget = QDateEdit()
 
             if(widget):
-                self.form_layout.addRow(QLabel(option[0]), widget)
+                layout.addRow(QLabel(option[0]), widget)
 
         submit_button = QPushButton()
         submit_button.setText("Run Query")
         submit_button.clicked.connect(self.run_query)
 
-        self.form_layout.addWidget(submit_button)
+        layout.addWidget(submit_button)
 
     def run_query(self):
         parameters = []
 
-        for i in range(self.form_layout.count()): 
+        for i in range(self.query_layout.count()): 
             if(i % 2 == 0):
                 continue
 
-            if(type(self.form_layout.itemAt(i).widget()) is QLineEdit):            
-                text = self.form_layout.itemAt(i).widget().text()
+            if(type(self.query_layout.itemAt(i).widget()) is QLineEdit):            
+                text = self.query_layout.itemAt(i).widget().text()
             else:
-                text = self.form_layout.itemAt(i).widget().currentText()
+                text = self.query_layout.itemAt(i).widget().currentText()
 
             parameters.append(text)
+        
+        results = test_results
+
+        self.display_list(self.query_results_layout, results)
 
     def create_donor(self):
         name = self.n_donor_name.text()
@@ -230,9 +327,33 @@ class UI(QMainWindow):
 
     def create_report(self, i):
         if(i == 0):
+            self.display_list(self.report_results_layout, [])
             return
 
-        print(self.report_list[i])
+        results = test_results
+
+        self.display_list(self.report_results_layout, results)
+
+    def display_list(self, layout, list):
+        for i in reversed(range(layout.count())): 
+            layout.itemAt(i).widget().setParent(None)
+
+        max_width = int(100 / (len(list[0])))
+
+        print(max_width)
+        print(len(list[0]))
+        for row in list:
+            lay = QHBoxLayout()            
+            for el in row:
+                text = str(el)[:max_width-2] + '..' if len(str(el)) > max_width else str(el)
+                label = QLabel(text)
+                lay.addWidget(label)
+                
+            group = QGroupBox()
+            group.setLayout(lay)
+            layout.addWidget(group)
+
+        
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
