@@ -6,6 +6,7 @@ class Login(QDialog):
     def __init__(self, parent = None):
         super(Login, self).__init__(parent)
 
+        self.view = None
         self.setWindowTitle("User Login")
 
         layout = QHBoxLayout(self)
@@ -52,8 +53,12 @@ class Login(QDialog):
         self.sign_up_tab.setLayout(layout)
 
     def login(self):
-        if(self.username.text() == 'foo' and
-            self.password.text() == 'bar'):
+        user = self.username.text()
+        password = self.password.text()
+        print(f"Logging in: {user} / {password}")
+
+        if(True):
+            self.view = "Doctor"
             self.accept()
         else:
             QMessageBox.warning(
@@ -66,7 +71,7 @@ class Login(QDialog):
         print(f"Create new user: {account} / {user} / {password}")
 
 class UI(QMainWindow):
-    def __init__(self, parent = None):
+    def __init__(self, view):
         super(UI, self).__init__(None)
 
         self.query_list = ['None', 'Organ Donor List', 'Blood Donor List', 'Donor Match List']
@@ -77,8 +82,9 @@ class UI(QMainWindow):
 
         self.report_list = ['None', 'Income Report', 'Operations Report']
 
+        self.view = view
         self.setWindowTitle("Hospital Database")
-        self.setGeometry(100, 100, 500, 400)
+        self.setGeometry(600, 300, 500, 800)
         self.setFixedSize(self.size())
 
         content = QWidget(self)
@@ -99,7 +105,7 @@ class UI(QMainWindow):
         content.show()
 
     def create_query_tab(self):
-        self.query_tab = QGroupBox("Donor Lists")
+        self.query_tab = QGroupBox()
         
         layout = QVBoxLayout()
 
@@ -118,7 +124,7 @@ class UI(QMainWindow):
         self.query_tab.setLayout(layout)
 
     def create_report_tab(self):
-        self.report_tab = QGroupBox("Reports")
+        self.report_tab = QGroupBox()
         
         layout = QVBoxLayout()
 
@@ -182,6 +188,7 @@ app = QApplication(sys.argv)
 login = Login()
 
 if(login.exec_() == QDialog.Accepted):
-    ui = UI()
+    view = login.view
+    ui = UI(view)
     ui.show()
     sys.exit(app.exec_())
