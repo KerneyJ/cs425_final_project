@@ -379,9 +379,32 @@ class Connection(object):
         except psycopg2.errors.InsufficientPrivilege as insfpr:
             return insfpr
 
-    def organ_donor_list(self, state, organ, doctor):
+    def organ_donor_list(self, state, organ):
         cur = self.__cur
 
+        # get organ donors
+        query = f"SELECT \"name\", dob, chronicillness, drugusage, medicalhistory FROM public.\"OrganDonor\" WHERE state = \'{state}\' AND organname = \'{organ}\'"
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print('failed organ donor', type(e), e)
+            return
+        odnrlst = cur.fetchall()
+
+        # get doctors
+        query = f"SELECT public.\"Doctor\".\"name\", public.\"Doctor\".email, public.\"Doctor\".phone \
+                  FROM (public.\"Doctor\" LEFT JOIN public.\"Hospital\" ON public.\"Doctor\".h_id = public.\"Hospital\".id) \
+                  WHERE organspec = \'{organ}\' AND state = \'{state}\'"
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print('failed to get doctors', type(e), e)
+            return
+        dlst = cur.fetchall()
+
+        return odnrlst, dlst
+
+        '''
         # get doctor id from doctor name 
         query = f"""SELECT public.\"Doctor\".id 
         FROM public.\"Doctor\" INNER JOIN public.\"Hospital\" ON public.\"Doctor\".h_id = public.\"Hospital\".id
@@ -417,6 +440,7 @@ class Connection(object):
             return
 
         return cur.fetchall()
+        '''
 
     def finacial_report(self):
         cur = self.__cur
@@ -478,9 +502,11 @@ if __name__ == "__main__":
     '''
 
     # make a bunch of patients
-    '''
-    doctors_ids = [i[0] for i in cnn.get_doctor_info(info='id')]
+    
+    doctors_ids = [(i[0], i[1]) for i in cnn.get_doctor_info(info='id, organspec')]
+    print(doctors_ids)
     doctors_ids.pop(0)
+    '''
     for name in names:
         cnn.add_patient(username='pt' + name, password='password', name=name, bloodtype=random.choice(bloodtypes), dob=f'{random.randint(1900, 2020)}-{random.randint(1,12)}-{random.randint(1,28)}', requestedorgan=random.choice(organs), email=name + '@pt.com', phone=random.choice(phonenumbers), dr_id=random.choice(doctors_ids))
     '''
@@ -510,6 +536,7 @@ if __name__ == "__main__":
 
     # print(cnn.organ_donor_list(state='MI', organ='kidney', doctor='ian'))
 
-    print(cnn.finacial_report())
+    # print(cnn.finacial_report())
+    print(cnn.organ_donor_list('IL', 'lung'))
 
     cnn.on_exit()

@@ -142,10 +142,19 @@ class UI(QMainWindow):
         scroll.setWidget(query_display)
         scroll.setWidgetResizable(True)
 
+        self.query2_results_layout = QVBoxLayout()
+        query2_display = QGroupBox("Results")
+        query2_display.setLayout(self.query2_results_layout)
+        self.scroll2 = QScrollArea()
+        self.scroll2.setWidget(query2_display)
+        self.scroll2.setWidgetResizable(True)
+        self.scroll2.hide()
+
         layout = QVBoxLayout()
         layout.addWidget(self.query_type)
         layout.addWidget(query_options)
         layout.addWidget(scroll)
+        layout.addWidget(self.scroll2)
         # layout.addStretch()
 
         self.query_tab = QGroupBox()
@@ -269,10 +278,15 @@ class UI(QMainWindow):
 
     def create_query_options(self, idx):
         options_list = [[], 
-                        [('State', 'text', 'IL'), ('Organ', 'text', ''), ('Doctor', 'text', '')], 
+                        [('State', 'text', 'IL'), ('Organ', 'text', '')],
                         [('State', 'text', 'IL'), ('Blood type', 'drop-down', self.blood_types), ('Availability', 'text', ''), ('Age Group', 'drop-down', ['0-15','16-64','65+'])],
                         [('State', 'text', 'IL'), ('Blood type', 'drop-down', self.blood_types), ('Organ', 'text', '')]]
         
+        if(idx == 1):
+            self.scroll2.show()
+        else:
+            self.scroll2.hide()
+
         self.query_idx = idx
         self.add_options(self.query_layout, options_list[idx], self.run_query)
         
@@ -323,11 +337,12 @@ class UI(QMainWindow):
             parameters.append(text)
         
         if(self.query_idx == 1):
-            results = self.connection.organ_donor_list(parameters[0], parameters[1], parameters[2])
+            results = self.connection.organ_donor_list(parameters[0], parameters[1])
+            self.display_list(self.query_results_layout, results[0])
+            self.display_list(self.query2_results_layout, results[1])
 
         # results = test_results
 
-        self.display_list(self.query_results_layout, results)
 
     def create_donor(self):
         name = self.n_donor_name.text()
@@ -387,18 +402,10 @@ class UI(QMainWindow):
             print('adding blood')
             self.connection.create_donation(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], today_str)
             print('has added blood')
-            # dr_id = self.connection.get_dr_id()
-            # p_id = self.connection.get_patient_for_blood(parameters[0])
-            # dn_id = self.connection.get_odonor_for_patient(parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
-            # self.connection.add_blood(parameters[2], QDate.currentDate(), QDate.currentDate(), 7, p_id, dn_id, dr_id)
         else:
             print('adding organ')
             self.connection.create_donation(parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], today_str, parameters[0])
             print('has added organ')
-            # dr_id = self.connection.get_dr_id()
-            # p_id = self.connection.get_patient_for_organ(parameters[0])
-            # dn_id = self.connection.get_odonor_for_patient(parameters[1], parameters[2], parameters[3], parameters[4], parameters[5])
-            # self.connection.add_organ(parameters[0], QDate.currentDate(), QDate.currentDate(), 7, p_id, dn_id, dr_id)
 
     def create_report(self, i):
         if(i == 0):
