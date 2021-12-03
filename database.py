@@ -263,7 +263,6 @@ class Connection(object):
         except Exception as e:
             print(type(e), e)
 
-
     def create_donation(self, name, dob, bloodtype, city, state, date, organ=None):
         cur = self.__cur
         dr_id = self.get_dr_id()
@@ -407,6 +406,35 @@ class Connection(object):
 
         return cur.fetchall()
 
+    def finacial_report(self):
+        cur = self.__cur
+        query = f"""
+                SELECT (public."Hospital"."name", avg(public."Hospital".hcost) * count(*)) 
+                FROM public."PaysFee" INNER JOIN public."Hospital" ON public."Hospital".id = public."PaysFee".h_id 
+                GROUP BY public."Hospital"."name";
+                """
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print(type(e), e)
+        
+        return cur.fetchall()
+
+    def operations_report(self):
+        cur = self.__cur
+        query = f"""
+                SELECT h.state, d."name", count(o.*) 
+                FROM "Doctor" as d INNER JOIN "Hospital" as h 
+                ON d.h_id = h.id LEFT OUTER JOIN "Organ" AS o ON o.dr_id = d.id
+                GROUP BY d."name", h.state ORDER BY h.state, count(o.*) DESC;
+                """
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print(type(e), e)
+
+        return cur.fetchall()
+
     def on_exit(self):
         self.__cur.close()
         self.__conn.close()
@@ -422,7 +450,7 @@ if __name__ == "__main__":
     # dob = rand.randint(1900, 2020)-random.randint(1,12)-random.randint(1,28)
 
     # make a bunch of hospitals
-    cnn = Connection(user="hspadmin", password="password")
+    cnn = Connection(user="drian", password="password")
     ''' 
     for i in range(20):
         l = random.choice(locations)
@@ -469,5 +497,7 @@ if __name__ == "__main__":
     # cnn.add_patient(username='pt' + 'mercy', password='password', name='mercy', bloodtype=random.choice(bloodtypes), dob=f'{random.randint(1900, 2020)}-{random.randint(1,12)}-{random.randint(1,28)}', requestedorgan='NULL', email='mercy@pt.com', phone=random.choice(phonenumbers), dr_id=random.choice(doctors_ids), requestedblood='TRUE')
 
     # print(cnn.organ_donor_list(state='MI', organ='kidney', doctor='ian'))
+
+    print(cnn.finacial_report())
 
     cnn.on_exit()

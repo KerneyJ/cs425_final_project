@@ -405,11 +405,11 @@ class UI(QMainWindow):
             self.display_list(self.report_results_layout, [])
             return
         elif(i==1): # income
-            pass
+            results = self.connection.finacial_report()
         elif(i==2): # operations
-            pass
+            results = self.connection.operations_report()
 
-        results = test_results
+        # results = test_results
 
         self.display_list(self.report_results_layout, results)
 
