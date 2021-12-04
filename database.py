@@ -1,9 +1,7 @@
-from datetime import date
-from math import pi
-from sys import exec_prefix
-from PyQt5.QtCore import qUnregisterResourceData
+import datetime
 import psycopg2
 import random
+import time
 
 # Notes: need to add hospital if there is none; make patients and doctors select hosptial on login in
 # possibly make admin role that can create hospitals
@@ -404,43 +402,58 @@ class Connection(object):
 
         return odnrlst, dlst
 
-        '''
-        # get doctor id from doctor name 
-        query = f"""SELECT public.\"Doctor\".id 
-        FROM public.\"Doctor\" INNER JOIN public.\"Hospital\" ON public.\"Doctor\".h_id = public.\"Hospital\".id
-        WHERE public.\"Doctor\".\"name\" = \'{doctor}\' AND public.\"Hospital\".state = \'{state}\'
-        """
+    def blood_donor_list(self, state, bloodtype, agegroup, availibility):
+        cur = self.__cur
+
+        # get organ donors
+        query = f"SELECT \"name\", dob, chronicillness, drugusage, medicalhistory, lastdonation \
+                  FROM public.\"BloodDonor\" WHERE state = \'{state}\' AND bloodtype = \'{bloodtype}\' AND (age BETWEEN {agegroup[0]} AND {agegroup[1]});"
         try:
-            cur.execute(query)
+            cur.execute(query=query)
         except Exception as e:
-            print(e)
+            print('failed organ donor', type(e), e)
             return
+        bdnrlst = cur.fetchall()
+        avail_date = datetime.datetime.strptime(availibility, '%Y-%m-%d')
+        _6m_unix = 60 * 60 * 24 * 30 * 6
+        bdnrlst = [(b[0], str(b[1]), b[2], b[3], b[4]) for b in bdnrlst if datetime.datetime.timestamp(avail_date) - time.mktime(b[5].timetuple()) > _6m_unix]
 
-        dr_ids = [str(e[0]) for e in cur.fetchall()]
-        dr_id_str = f"({', '.join(dr_ids)})"
+        return bdnrlst
 
-        # pull donor id from organ relation that match state, organ, and doctor
-        query = f"SELECT dn_id FROM public.\"Organ\" WHERE dr_id IN {dr_id_str} AND organname = \'{organ}\'"
-        print(query)
-        try:
-            cur.execute(query)
-        except Exception as e:
-            print(e)
-            return
-
-        dn_ids = cur.fetchall()
-        dn_ids_str = f"({', '.join(dn_ids)})"
-
-        # pull donors with donor id from above
-        query = f"SELECT * FROM public.\"OrganDonor\" WHERE id IN {dn_ids_str}"
-        try:
-            cur.execute(query)
-        except Exception as e:
-            print(e)
-            return
-
-        return cur.fetchall()
-        '''
+    def donor_match_list(self, state, bloodtype, organ=None):
+        cur = self.__cur
+        if organ:
+            # get organ donors
+            query = f"SELECT \"name\", dob, chronicillness, drugusage, medicalhistory, bloodtype FROM public.\"OrganDonor\" WHERE state = \'{state}\' AND organname = \'{organ}\'"
+            try:
+                cur.execute(query=query)
+            except Exception as e:
+                print('failed organ donor', type(e), e)
+                return
+            odnrlst = cur.fetchall()
+            if 'AB' not in bloodtype:
+                odnrlst = [(e[0], str(e[1]), e[2], e[3], e[4]) for e in odnrlst if e[5] == bloodtype or 'O' in e[5]]
+            
+            return odnrlst
+        else:
+            if 'AB' in bloodtype:
+                query = f"SELECT \"name\", dob, chronicillness, drugusage, medicalhistory FROM public.\"BloodDonor\" WHERE state = \'{state}\';"
+                try:
+                    cur.execute(query=query)
+                except Exception as e:
+                    print('failed organ donor', type(e), e)
+                    return
+                bdnrlst = cur.fetchall()
+            else:
+                query = f"SELECT \"name\", dob, chronicillness, drugusage, medicalhistory FROM public.\"BloodDonor\" WHERE state = \'{state}\' AND (bloodtype = \'{bloodtype}\' OR bloodtype = \'O-\' OR bloodtype = \'O+\');"
+                try:
+                    cur.execute(query=query)
+                except Exception as e:
+                    print('failed organ donor', type(e), e)
+                    return
+                bdnrlst = cur.fetchall()
+            
+            return bdnrlst
 
     def finacial_report(self):
         cur = self.__cur
@@ -502,11 +515,10 @@ if __name__ == "__main__":
     '''
 
     # make a bunch of patients
-    
+    '''
     doctors_ids = [(i[0], i[1]) for i in cnn.get_doctor_info(info='id, organspec')]
     print(doctors_ids)
     doctors_ids.pop(0)
-    '''
     for name in names:
         cnn.add_patient(username='pt' + name, password='password', name=name, bloodtype=random.choice(bloodtypes), dob=f'{random.randint(1900, 2020)}-{random.randint(1,12)}-{random.randint(1,28)}', requestedorgan=random.choice(organs), email=name + '@pt.com', phone=random.choice(phonenumbers), dr_id=random.choice(doctors_ids))
     '''
@@ -537,6 +549,8 @@ if __name__ == "__main__":
     # print(cnn.organ_donor_list(state='MI', organ='kidney', doctor='ian'))
 
     # print(cnn.finacial_report())
-    print(cnn.organ_donor_list('IL', 'lung'))
+    # print(cnn.organ_donor_list('IL', 'lung'))
+    # cnn.blood_donor_list('IL', 'AB+', (0, 100), '2021-12-03')
+    print(cnn.donor_match_list('IL', 'A-'))
 
     cnn.on_exit()

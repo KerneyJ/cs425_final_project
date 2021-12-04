@@ -338,11 +338,18 @@ class UI(QMainWindow):
         
         if(self.query_idx == 1):
             results = self.connection.organ_donor_list(parameters[0], parameters[1])
-            self.display_list(self.query_results_layout, results[0])
             self.display_list(self.query2_results_layout, results[1])
+            results = results[0]
+        elif(self.query_idx == 2):
+            if '-' in parameters[3]:
+                parameters[3] = parameters[3].split('-')
+            else:
+                parameters[3] = (65, 1000)
+            results = self.connection.blood_donor_list(parameters[0], parameters[1], parameters[3], parameters[2])
+        elif(self.query_idx == 3):
+            results = self.connection.donor_match_list(parameters[0], parameters[1], parameters[2])
 
-        # results = test_results
-
+        self.display_list(self.query_results_layout, results)
 
     def create_donor(self):
         name = self.n_donor_name.text()
@@ -420,13 +427,16 @@ class UI(QMainWindow):
 
         self.display_list(self.report_results_layout, results)
 
-    def display_list(self, layout, list):
+    def display_list(self, layout, lst):
         for i in reversed(range(layout.count())): 
             layout.itemAt(i).widget().setParent(None)
 
-        max_width = int(100 / (len(list[0])))
+        if len(lst) == 0:
+            return
+        
+        max_width = int(100 / (len(lst[0])))
 
-        for row in list:
+        for row in lst:
             lay = QHBoxLayout()            
             for el in row:
                 text = str(el)[:max_width-2] + '..' if len(str(el)) > max_width else str(el)
