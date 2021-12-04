@@ -1,4 +1,5 @@
 import datetime
+from types import ClassMethodDescriptorType
 import psycopg2
 import random
 import time
@@ -7,6 +8,8 @@ import time
 # possibly make admin role that can create hospitals
 
 class Connection(object):
+
+    regcon = psycopg2.connect(database='project425', user='reg', password='password', host = "127.0.0.1", port = "5432")
 
     def __init__(self, user, password) -> None:
         super().__init__()
@@ -104,7 +107,7 @@ class Connection(object):
         except Exception as e: # TODO go through and add more exceptions
             print('createpassword', e)
             return
-        
+
         # grant doctor privileges
         query = f"GRANT doctor to {username}"
         try:
@@ -112,6 +115,8 @@ class Connection(object):
         except Exception as e: # TODO go through and add more exceptions
             print('grant privileges', e)
             return
+
+        self.__conn.commit()
 
     def create_pat_acc(self, username, password):
         cur = self.__cur
@@ -138,6 +143,8 @@ class Connection(object):
         except Exception as e: # TODO go through and add more exceptions
             print('grant privileges', e)
             return
+
+        self.__conn.commit()
 
     def add_patient(self, username, password, name, bloodtype, dob, requestedorgan, email, phone, dr_id, requestedblood='FALSE'):
         """Add patient is intended to be called when the user is dbadmin, it will both add a doctor to the database and create a new role"""
@@ -406,7 +413,7 @@ class Connection(object):
         odnrlst = cur.fetchall()
 
         # get doctors
-        query = f"SELECT public.\"Doctor\".\"name\", public.\"Doctor\".email, public.\"Doctor\".phone \
+        query = f"SELECT public.\"Doctor\".\"name\", public.\"Doctor\".email, public.\"Doctor\".phone, public.\"Doctor\".id \
                   FROM (public.\"Doctor\" LEFT JOIN public.\"Hospital\" ON public.\"Doctor\".h_id = public.\"Hospital\".id) \
                   WHERE organspec = \'{organ}\' AND state = \'{state}\'"
         try:
@@ -500,7 +507,7 @@ class Connection(object):
 
         return cur.fetchall()
     
-    def make_request(self, organname):
+    def make_request(self, organname, state):
         cur = self.__cur
         p_id = self.get_patient_id()
 
@@ -511,7 +518,7 @@ class Connection(object):
         while curr_id in ids:
             curr_id = random.randint(0, 2 ** 16 - 1)
 
-        query = f"INSERT INTO public.\"OrganRequest\"(p_id, r_id, organname) VALUES({p_id}, {curr_id}, \'{organname}\')"
+        query = f"INSERT INTO public.\"OrganRequest\"(p_id, r_id, organname, state) VALUES({p_id}, {curr_id}, \'{organname}\', \'{state}\')"
         try:
             cur.execute(query=query)
         except Exception as e:
@@ -522,13 +529,162 @@ class Connection(object):
     def get_request(self):
         cur = self.__cur
         
-        query = f"SELECT \"name\", email, r_id, organname FROM public.\"OrganRequest\" INNER JOIN public.\"Patient\" ON public.\"OrganRequest\".p_id = public.\"Patient\".id"
+        query = f"SELECT \"name\", email, r_id, organname, state FROM public.\"OrganRequest\" INNER JOIN public.\"Patient\" ON public.\"OrganRequest\".p_id = public.\"Patient\".id"
         try:
             cur.execute(query=query)
             return cur.fetchall()
         except Exception as e:
             print('failed to get request', type(e), e)
             return None
+
+    def approve_request(self, r_id, dr_id):
+        cur = self.__cur
+
+        # get p_id
+        query = f"SELECT public.\"Patient\".id FROM public.\"Patient\" INNER JOIN public.\"OrganRequest\" ON public.\"OrganRequest\".p_id = public.\"Patient\".id "
+        try:
+            cur.execute(query=query)
+            p_id = cur.fetchall()[0][0]
+        except Exception as e:
+            print('failed to get p_id', type(e), e)
+            return
+
+        # get organname
+        query = f"SELECT organname FROM public.\"OrganRequest\" WHERE r_id = {r_id}"
+        try:
+            cur.execute(query=query)
+            organname = cur.fetchall()[0][0]
+        except Exception as e:
+            print('failed to get organname', type(e), e)
+            return
+
+        # update patients requested organ assign patient a doctor
+        query = f"UPDATE public.\"Patient\" SET requestedorgan = \'{organname}\', dr_id = {dr_id} WHERE id = {p_id}" 
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print('failed to update patients doctor', type(e), e)
+            return
+
+        # delete request
+        query = f"DELETE FROM public.\"OrganRequest\" WHERE r_id = {r_id}"
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print('failed to delete request', type(e), e)
+
+        self.__conn.commit()
+
+    def reject_request(self, r_id):
+        cur = self.__cur
+
+        # delete request
+        query = f"DELETE FROM public.\"OrganRequest\" WHERE r_id = {r_id}"
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print('failed to delete request', type(e), e)
+
+        self.__conn.commit()
+
+    @classmethod
+    def regist_mreq(cls, accounttype, username=None, pword=None, name=None, bloodtype=None, dob=None, email=None, phone=None, city=None, state=None, drug_usage=None, med_hist=None, chron_ill=None, organname=None, organ_spec=None):
+        cur = cls.regcon.cursor()
+
+        cur.execute("SELECT r_id FROM public.\"RegistrationRequest\"")
+        ids = cur.fetchall()
+        ids = [i[0] for i in ids]
+        curr_id = random.randint(0, 2 ** 16 - 1)
+        while curr_id in ids:
+            curr_id = random.randint(0, 2 ** 16 - 1)
+
+        if accounttype == 'p':
+            query = f"INSERT INTO public.\"RegistrationRequest\"(r_id, accounttype, username, pword, \"name\", bloodtype, dob, email, phone) VALUES({curr_id}, \'p\', \'{username}\', \'{pword}\', \'{name}\', \'{bloodtype}\', \'{dob}\', \'{email}\', \'{phone}\')"
+            try:
+                cur.execute(query=query)
+            except Exception as e:
+                print('could not insert patient', type(e), e)
+                return
+        elif accounttype == 'b':
+            query = f"INSERT INTO public.\"RegistrationRequest\"(r_id, accounttype, \"name\", bloodtype, dob, email, phone, city, state, drug_usage, med_hist, chron_ill) VALUES({curr_id}, \'b\', \'{name}\', \'{bloodtype}\', \'{dob}\', \'{email}\', \'{phone}\', \'{city}\', \'{state}\', \'{drug_usage}\', \'{med_hist}\', \'{chron_ill}\')"
+            try:
+                cur.execute(query=query)
+            except Exception as e:
+                print('could not insert blood donor', type(e), e)
+                return
+        elif accounttype == 'o':
+            query = f"INSERT INTO public.\"RegistrationRequest\"(r_id, accounttype, \"name\", bloodtype, dob, email, phone, city, state, drug_usage, med_hist, chron_ill, organname) VALUES({curr_id}, \'o\', \'{name}\', \'{bloodtype}\', \'{dob}\', \'{email}\', \'{phone}\', \'{city}\', \'{state}\', \'{drug_usage}\', \'{med_hist}\', \'{chron_ill}\', \'{organname}\')"
+            try:
+                cur.execute(query=query)
+            except Exception as e:
+                print('could not insert organ donor', type(e), e)
+                return
+        elif accounttype == 'd':
+            query = f"INSERT INTO public.\"RegistrationRequest\"(r_id, accounttype, username, pword, \"name\", dob, email, phone, organ_spec) VALUES({curr_id}, \'d\', \'{username}\', \'{pword}\', \'{name}\', \'{dob}\', \'{email}\', \'{phone}\', \'{organ_spec}\')"
+            try:
+                cur.execute(query=query)
+            except Exception as e:
+                print('could not insert doctor', type(e), e)
+                return
+
+        cls.regcon.commit()
+
+    @classmethod
+    def regist_sreq(cls):
+        cur = cls.regcon.cursor()
+
+        query = f"SELECT * FROM public.\"RegistrationRequest\""
+        try:
+            cur.execute(query=query)
+            return cur.fetchall()
+        except Exception as e:
+            print("could not get req", type(e), e)
+            return None
+
+    def regist_areq(self, r_id):
+        cur = self.__cur
+
+        query = f"SELECT * FROM public.\"RegistrationRequest\" WHERE r_id = {r_id}"
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print("could not get req", type(e), e)
+            return
+
+        req = cur.fetchone()
+        if req == None:
+            return
+        account_type = req[len(req) - 1] 
+        
+        if account_type == 'p':
+            self.add_patient(username=req[0], password=req[1], name=req[2], bloodtype=req[3], dob=str(req[4]), requestedorgan='NULL', email=req[5], phone=req[6], dr_id='NULL')
+        elif account_type == 'b':
+            self.add_Bdonor(name=req[2], bloodtype=req[3], dob=str(req[4]), chronicilness=req[11], medicalhistory=req[10], drugusage=req[9], lastdonation='1970-01-01', city=req[7], state=req[8], email=req[5], phone=req[6])
+        elif account_type == 'o':
+            self.add_Odonor(name=req[2], bloodtype=req[3], dob=str(req[4]), chronicilness=req[11], medicalhistory=req[10], drugusage=req[9], city=req[7], state=req[8], organname=req[12], email=req[5], phone=req[6])
+        elif account_type == 'd':
+            self.add_doctor(username=req[0], password=req[1], name=req[2], organspec=req[13], dob=str(req[4]), email=req[5], phone=req[6], h_id='NULL')
+
+        # delete request
+        query = f"DELETE FROM public.\"RegistrationRequest\" WHERE r_id = {r_id}"
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print('failed to delete request', type(e), e)
+
+        self.__conn.commit()
+
+    def regist_rreq(self, r_id):
+        cur = self.__cur
+
+        # delete request
+        query = f"DELETE FROM public.\"RegistrationRequest\" WHERE r_id = {r_id}"
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print('failed to delete request', type(e), e)
+
+        self.__conn.commit()
 
     def on_exit(self):
         self.__cur.close()
@@ -599,6 +755,7 @@ if __name__ == "__main__":
     # cnn.blood_donor_list('IL', 'AB+', (0, 100), '2021-12-03')
     # print(cnn.donor_match_list('IL', 'A-'))
     # cnn.make_request('kidney')
-    hospital_ids = [i[0] for i in cnn.get_hospitals_info(info='id')]
-    print(hospital_ids)
+    # hospital_ids = [i[0] for i in cnn.get_hospitals_info(info='id')]
+    # print(hospital_ids)
+    cnn.regist_areq(13802)
     cnn.on_exit()

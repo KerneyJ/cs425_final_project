@@ -130,27 +130,29 @@ class Login(QDialog):
     def register(self):
         parameters = []
 
-        for i in range(self.query_layout.count()): 
+        for i in range(self.registration_info.count()): 
             if(i % 2 == 0):
                 continue
 
-            if(type(self.query_layout.itemAt(i).widget()) is QLineEdit):            
-                text = self.query_layout.itemAt(i).widget().text()
+            if(type(self.registration_info.itemAt(i).widget()) is QLineEdit):            
+                text = self.registration_info.itemAt(i).widget().text()
             else:
-                text = self.query_layout.itemAt(i).widget().currentText()
+                text = self.registration_info.itemAt(i).widget().currentText()
 
             parameters.append(text)
 
-        account_type = self.r_account_type.currentText()
+        account_type = self.r_account_type.currentText()[0].lower()
         username = self.r_username.text()
-        password = self.r_username.text()
+        password = self.r_password.text()
 
-        if(account_type == "Patient"):
-            pass
-        elif(account_type == "Blood Donor"):
-            pass
-        elif(account_type == "Organ Donor"):
-            pass
+        if(account_type == "p"):
+            Connection.regist_mreq(account_type, username, password, parameters[0], parameters[1], parameters[2], parameters[3], parameters[4])
+        elif(account_type == "b"):
+            Connection.regist_mreq(account_type, username, password, parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8], parameters[9])
+        elif(account_type == "o"):
+            Connection.regist_mreq(account_type, username, password, parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7], parameters[8], parameters[9], parameters[10])
+        elif(account_type == "d"):
+            Connection.regist_mreq(account_type, username, password, parameters[0], None, parameters[1], parameters[2], parameters[3], None, None, None, None, None, None, parameters[4])
 
     def login(self):
         self.connection = None
@@ -186,7 +188,8 @@ class UI(QMainWindow):
                      (self.create_donation_tab, 'AD'),
                      (self.create_admin_tab, 'A'),
                      (self.create_organ_request_tab, 'P'),
-                     (self.create_approval_tab, 'A'),]
+                     (self.create_approval_tab, 'A'),
+                     (self.create_registration_approval_tab, 'A'),]
 
         self.view = view
         self.setWindowTitle("Hospital Database")
@@ -212,14 +215,15 @@ class UI(QMainWindow):
     def create_organ_request_tab(self):
         label = QLabel("Request an Organ:")
         self.organ_request = QLineEdit()
+        self.organ_state = QLineEdit()
         submit_button = QPushButton('Submit Request')
         submit_button.clicked.connect(self.request_organ)
 
-        layout = QVBoxLayout()
+        layout = QFormLayout()
         layout.addWidget(label)
-        layout.addWidget(self.organ_request)
+        layout.addRow("Organ name:", self.organ_request)
+        layout.addRow("State:", self.organ_state)
         layout.addWidget(submit_button)
-        layout.addStretch()
 
         self.organ_tab = QGroupBox()
         self.organ_tab.setLayout(layout)
@@ -227,7 +231,8 @@ class UI(QMainWindow):
 
     def request_organ(self):
         organ = self.organ_request.text()
-        self.connection.make_request(organ)
+        state = self.organ_state.text()
+        self.connection.make_request(organ, state)
         self.organ_request.setText('')
 
     def create_approval_tab(self):
@@ -277,12 +282,14 @@ class UI(QMainWindow):
         request_id = self.request_id.text()
         doctor_id = self.doctor_id.text()
 
-        # TODO delete request and assign doctor to patient
+        self.connection.approve_request(request_id, doctor_id)
+        self.load_requests()
 
     def deny_request(self):
         request_id = self.request_id.text()
         
-        # TODO delete request
+        self.connection.reject_request(request_id)
+        self.load_requests()
 
     def create_query_tab(self):
         query_list = ['None', 'Organ Donor List', 'Blood Donor List', 'Donor Match List']
@@ -429,6 +436,7 @@ class UI(QMainWindow):
         account = self.account_drop.currentText()
         user = self.n_username.text()
         password = self.n_password.text()
+        print('creating user')
         
         if account == 'Doctor':
             self.connection.create_doc_acc(self.n_username.text(), self.n_password.text())
@@ -510,6 +518,55 @@ class UI(QMainWindow):
             results = self.connection.donor_match_list(parameters[0], parameters[1], parameters[2])
 
         self.display_list(self.query_results_layout, results)
+
+    def create_registration_approval_tab(self):
+        self.r_request_id = QLineEdit()
+        self.r_approve_button = QPushButton('Approve Request')
+        self.r_approve_button.clicked.connect(self.approve_registration)
+        self.r_deny_button = QPushButton('Deny Request')
+        self.r_deny_button.clicked.connect(self.deny_registration)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(self.r_approve_button)
+        button_layout.addWidget(self.r_deny_button)
+
+        t_layout = QFormLayout()
+        t_layout.addRow('Request ID', self.r_request_id)
+        t_layout.addRow(button_layout)
+
+        top = QGroupBox("Handle Requests")
+        top.setLayout(t_layout)
+
+        self.request_r_results_layout = QVBoxLayout()
+        request_display = QGroupBox("View Requests")
+        request_display.setLayout(self.request_r_results_layout)
+        scroll = QScrollArea()
+        scroll.setWidget(request_display)
+        scroll.setWidgetResizable(True)
+
+        self.load_registration_requests()
+
+        layout = QVBoxLayout()
+        layout.addWidget(top)
+        layout.addWidget(scroll)
+
+        self.registration_tab = QGroupBox()
+        self.registration_tab.setLayout(layout)
+        self.tab_widget.addTab(self.registration_tab, "Handle Registrations")
+
+    def load_registration_requests(self):
+        # TODO fetch all pending requests
+        results = Connection.regist_sreq()
+
+        self.display_list(self.request_r_results_layout, results)
+
+    def approve_registration(self):
+        request_id = self.r_request_id.text()
+        self.connection.regist_areq(request_id)
+
+    def deny_registration(self):
+        request_id = self.r_request_id.text()
+        self.connection.regist_rreq(request_id)
 
     def create_donor(self):
         name = self.n_donor_name.text()
