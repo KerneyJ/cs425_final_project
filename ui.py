@@ -47,9 +47,11 @@ class Login(QDialog):
         layout = QHBoxLayout(self)
 
         self.create_login_tab()
+        self.create_registration_tab()
 
         tab_widget = QTabWidget()
         tab_widget.addTab(self.login_tab, "Log in")
+        tab_widget.addTab(self.registration_tab, "Register")
         layout.addWidget(tab_widget)
 
     def create_login_tab(self):
@@ -68,6 +70,87 @@ class Login(QDialog):
 
         self.login_tab = QGroupBox()
         self.login_tab.setLayout(layout)
+    
+    def create_registration_tab(self):
+        self.r_account_type = QComboBox()
+        self.r_account_type.addItems(["Patient", "Blood Donor", "Organ Donor", "Doctor"])
+        self.r_account_type.currentIndexChanged.connect(self.add_registration_info)
+        self.r_username = QLineEdit(self)
+        self.r_password = QLineEdit(self)
+        self.registration_button = QPushButton('Login', self)
+        self.registration_button.clicked.connect(self.register)
+
+        self.registration_info = QFormLayout()
+        info = QGroupBox("Information")
+        info.setLayout(self.registration_info)
+
+        self.add_registration_info(0)
+
+        layout = QFormLayout()
+        layout.addRow("Account type:", self.r_account_type)
+        layout.addRow("Username:", self.r_username)
+        layout.addRow("Password:", self.r_password)
+        layout.addRow(info)
+        layout.addRow(self.registration_button)
+
+        self.registration_tab = QGroupBox()
+        self.registration_tab.setLayout(layout)
+
+    def add_registration_info(self, idx):
+        blood_types = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+        
+        options_list = [ # Patient blood donor organ donor doctor
+            [("Name:", "text"), ("Blood type:", 'drop-down', blood_types), ("DOB:", 'text'), ('Email:', 'text'), ('Phone:', 'text')],
+            [("Name:", "text"), ("Blood type:", 'drop-down', blood_types), ("DOB:", 'text'), ('Email:', 'text'), ('Phone:', 'text'), ('City:', 'text'), ('State:', 'text'), ('Drug Usage:', 'text'), ('Medical History:', 'text'), ('Chronic Ilness:', 'text')],
+            [("Name:", "text"), ("Blood type:", 'drop-down', blood_types), ("DOB:", 'text'), ('Email:', 'text'), ('Phone:', 'text'), ('City:', 'text'), ('State:', 'text'), ('Drug Usage:', 'text'), ('Medical History:', 'text'), ('Chronic Ilness:', 'text'), ('Organ to Donate:', 'text')],
+            [("Name:", "text"), ("DOB:", 'text'), ('Email:', 'text'), ('Phone:', 'text'), ('Organ Specialty', 'text')],
+        ]
+
+        self.add_options(self.registration_info, options_list[idx])
+
+    def add_options(self, layout, options):
+            for i in reversed(range(layout.count())): 
+                layout.itemAt(i).widget().setParent(None)
+
+            if(options == []):
+                return
+            
+            for option in options:
+                if(option[1] == 'text'):
+                    widget = QLineEdit()
+                elif(option[1] == 'drop-down'):
+                    widget = QComboBox()
+                    widget.addItems(option[2])
+                elif(option[1] == 'date'):
+                    widget = QDateEdit()
+
+                if(widget):
+                    layout.addRow(QLabel(option[0]), widget)
+
+    def register(self):
+        parameters = []
+
+        for i in range(self.query_layout.count()): 
+            if(i % 2 == 0):
+                continue
+
+            if(type(self.query_layout.itemAt(i).widget()) is QLineEdit):            
+                text = self.query_layout.itemAt(i).widget().text()
+            else:
+                text = self.query_layout.itemAt(i).widget().currentText()
+
+            parameters.append(text)
+
+        account_type = self.r_account_type.currentText()
+        username = self.r_username.text()
+        password = self.r_username.text()
+
+        if(account_type == "Patient"):
+            pass
+        elif(account_type == "Blood Donor"):
+            pass
+        elif(account_type == "Organ Donor"):
+            pass
 
     def login(self):
         self.connection = None
@@ -101,7 +184,9 @@ class UI(QMainWindow):
         self.tabs = [(self.create_query_tab, 'ADP'),
                      (self.create_report_tab, 'AD'),
                      (self.create_donation_tab, 'AD'),
-                     (self.create_admin_tab, 'A'),]
+                     (self.create_admin_tab, 'A'),
+                     (self.create_organ_request_tab, 'P'),
+                     (self.create_approval_tab, 'A'),]
 
         self.view = view
         self.setWindowTitle("Hospital Database")
@@ -123,6 +208,81 @@ class UI(QMainWindow):
         content.setLayout(layout)
 
         content.show()
+
+    def create_organ_request_tab(self):
+        label = QLabel("Request an Organ:")
+        self.organ_request = QLineEdit()
+        submit_button = QPushButton('Submit Request')
+        submit_button.clicked.connect(self.request_organ)
+
+        layout = QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(self.organ_request)
+        layout.addWidget(submit_button)
+        layout.addStretch()
+
+        self.organ_tab = QGroupBox()
+        self.organ_tab.setLayout(layout)
+        self.tab_widget.addTab(self.organ_tab, "Request Organ")
+
+    def request_organ(self):
+        organ = self.organ_request.text()
+        self.connection.make_request(organ)
+        self.organ_request.setText('')
+
+    def create_approval_tab(self):
+        self.request_id = QLineEdit()
+        self.doctor_id = QLineEdit()
+        self.approve_button = QPushButton('Approve Request')
+        self.approve_button.clicked.connect(self.approve_request)
+        self.deny_button = QPushButton('Deny Request')
+        self.deny_button.clicked.connect(self.deny_request)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(self.approve_button)
+        button_layout.addWidget(self.deny_button)
+
+        t_layout = QFormLayout()
+        t_layout.addRow('Request ID', self.request_id)
+        t_layout.addRow('Doctor ID (N/A for denials)', self.doctor_id)
+        t_layout.addRow(button_layout)
+
+        top = QGroupBox("Handle Requests")
+        top.setLayout(t_layout)
+
+        self.request_results_layout = QVBoxLayout()
+        request_display = QGroupBox("View Requests")
+        request_display.setLayout(self.request_results_layout)
+        scroll = QScrollArea()
+        scroll.setWidget(request_display)
+        scroll.setWidgetResizable(True)
+
+        self.load_requests()
+
+        layout = QVBoxLayout()
+        layout.addWidget(top)
+        layout.addWidget(scroll)
+
+        self.approval_tab = QGroupBox()
+        self.approval_tab.setLayout(layout)
+        self.tab_widget.addTab(self.approval_tab, "Handle Requests")
+
+    def load_requests(self):
+        # TODO fetch all pending requests
+        results = self.connection.get_request()
+
+        self.display_list(self.request_results_layout, results)
+
+    def approve_request(self):
+        request_id = self.request_id.text()
+        doctor_id = self.doctor_id.text()
+
+        # TODO delete request and assign doctor to patient
+
+    def deny_request(self):
+        request_id = self.request_id.text()
+        
+        # TODO delete request
 
     def create_query_tab(self):
         query_list = ['None', 'Organ Donor List', 'Blood Donor List', 'Donor Match List']

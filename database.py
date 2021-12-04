@@ -14,11 +14,23 @@ class Connection(object):
         self.__conn = psycopg2.connect(database="project425", user=user, password=password, host = "127.0.0.1", port = "5432")
         self.__cur = self.__conn.cursor()
 
+    def get_patient_id(self):
+        cur = self.__cur
+
+        query = f"SELECT id FROM public.\"Patient\" WHERE username = \'{self.user}\'"
+        try:
+            cur.execute(query=query)
+            return cur.fetchone()[0]
+        except Exception as e:
+            print("failed get patient info", type(e), e)
+            return None
+
     def add_hospital(self, name, city, state, hcost):
         cur = self.__cur
         query = "INSERT INTO public.\"Hospital\"(id, \"name\", city, state, hcost) VALUES (%s, %s, %s, %s, %s)"
         cur.execute("SELECT id FROM public.\"Hospital\"")
         ids = cur.fetchall()
+        ids = [i[0] for i in ids]
         curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
             curr_id = random.randint(0, 2 ** 16 - 1)
@@ -36,6 +48,7 @@ class Connection(object):
         cur = self.__cur
         cur.execute("SELECT id FROM public.\"Doctor\"")
         ids = cur.fetchall()
+        ids = [i[0] for i in ids]
         curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
             curr_id = random.randint(0, 2 ** 16 - 1)
@@ -131,6 +144,7 @@ class Connection(object):
         cur = self.__cur
         cur.execute("SELECT id FROM public.\"Patient\"")
         ids = cur.fetchall()
+        ids = [i[0] for i in ids]
         curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
             curr_id = random.randint(0, 2 ** 16 - 1)
@@ -175,6 +189,7 @@ class Connection(object):
         # generate a unique id
         cur.execute("SELECT id FROM public.\"BloodDonor\"")
         ids = cur.fetchall()
+        ids = [i[0] for i in ids]
         curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
             curr_id = random.randint(0, 2 ** 16 - 1)
@@ -195,6 +210,7 @@ class Connection(object):
         # generate a unique id
         cur.execute("SELECT id FROM public.\"OrganDonor\"")
         ids = cur.fetchall()
+        ids = [i[0] for i in ids]
         curr_id = random.randint(0, 2 ** 16 - 1)
         while curr_id in ids:
             curr_id = random.randint(0, 2 ** 16 - 1)
@@ -483,6 +499,36 @@ class Connection(object):
             print(type(e), e)
 
         return cur.fetchall()
+    
+    def make_request(self, organname):
+        cur = self.__cur
+        p_id = self.get_patient_id()
+
+        cur.execute("SELECT r_id FROM public.\"OrganRequest\"")
+        ids = cur.fetchall()
+        ids = [i[0] for i in ids]
+        curr_id = random.randint(0, 2 ** 16 - 1)
+        while curr_id in ids:
+            curr_id = random.randint(0, 2 ** 16 - 1)
+
+        query = f"INSERT INTO public.\"OrganRequest\"(p_id, r_id, organname) VALUES({p_id}, {curr_id}, \'{organname}\')"
+        try:
+            cur.execute(query=query)
+        except Exception as e:
+            print("failed to insert into request", type(e), e)
+
+        self.__conn.commit()
+
+    def get_request(self):
+        cur = self.__cur
+        
+        query = f"SELECT \"name\", email, r_id, organname FROM public.\"OrganRequest\" INNER JOIN public.\"Patient\" ON public.\"OrganRequest\".p_id = public.\"Patient\".id"
+        try:
+            cur.execute(query=query)
+            return cur.fetchall()
+        except Exception as e:
+            print('failed to get request', type(e), e)
+            return None
 
     def on_exit(self):
         self.__cur.close()
@@ -499,7 +545,7 @@ if __name__ == "__main__":
     # dob = rand.randint(1900, 2020)-random.randint(1,12)-random.randint(1,28)
 
     # make a bunch of hospitals
-    cnn = Connection(user="drian", password="password")
+    cnn = Connection(user="hspadmin", password="password")
     ''' 
     for i in range(20):
         l = random.choice(locations)
@@ -551,6 +597,8 @@ if __name__ == "__main__":
     # print(cnn.finacial_report())
     # print(cnn.organ_donor_list('IL', 'lung'))
     # cnn.blood_donor_list('IL', 'AB+', (0, 100), '2021-12-03')
-    print(cnn.donor_match_list('IL', 'A-'))
-
+    # print(cnn.donor_match_list('IL', 'A-'))
+    # cnn.make_request('kidney')
+    hospital_ids = [i[0] for i in cnn.get_hospitals_info(info='id')]
+    print(hospital_ids)
     cnn.on_exit()
